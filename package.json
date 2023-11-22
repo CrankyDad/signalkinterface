@@ -1,7 +1,11 @@
 {
   "name": "signalkinterface",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Nodes to connect to SignalK servers running locally or remotely. These nodes do not need to be run inside SignalK.",
+  "dependencies": {
+		"request" : ">=2.72.0",
+		"ws": ">=7.2.0"
+	},
   "main": "index.js",
   "scripts": {
     "test": "testsignalk"
@@ -12,7 +16,7 @@
   },
   "keywords": [
     "SignalK",
-    "Node-Red"
+    "node-red",
   ],
   "author": "Jan Wellergård",
   "license": "GPL-3.0-or-later",
@@ -21,7 +25,8 @@
         "nodes": {
             "signalkinterfaceconfig": "signalkinterfaceconfig.js",
             "signalkin": "signalkin.js",
-            "signalkout": "signalkout.js"
+            "signalkout": "signalkout.js",
+            "signalkhelper": "signalkhelper.js"
         }
   }
 }
