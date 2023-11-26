@@ -3,8 +3,6 @@
   "version": "0.0.1",
   "description": "Nodes helping to connect to SignalK servers running locally or remotely. They also simplyfy the use of SignalK within Node Red by removing the need to construct/descobstruct SignalK messages. The idea is only use messages with the SignalK path as msg.topic and the value as payload. These nodes do not need to be run inside SignalK.",
   "dependencies": {
-		"request" : ">=2.72.0",
-		"ws": ">=7.2.0"
 	},
   "main": "index.js",
   "scripts": {
@@ -24,7 +22,6 @@
   "node-red" : {
         "nodes": {
             "signalkputhelper": "signalkputhelper.js",
-            "signalflattener": "signalflattener.js",
             "signalkhelper": "signalkhelper.js"
         }
   }
