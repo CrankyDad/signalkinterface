@@ -34,22 +34,22 @@
                         "port": 0
                     },
                     {
-                        "id": "d80a6302210948f2",
-                        "port": 0
-                    },
-                    {
                         "id": "cd0301c859dddfa3",
                         "port": 0
                     },
                     {
                         "id": "ecc88d0ba4909d2a",
                         "port": 0
+                    },
+                    {
+                        "id": "63c82b53d59c54eb",
+                        "port": 0
                     }
                 ]
             },
             {
-                "x": 2880,
-                "y": 440,
+                "x": 2840,
+                "y": 400,
                 "wires": [
                     {
                         "id": "857ecbba2f499461",
@@ -389,16 +389,16 @@
             "Updates"
         ],
         "status": {
-            "x": 3140,
-            "y": 500,
+            "x": 3080,
+            "y": 460,
             "wires": [
                 {
                     "id": "e7e76d36374356a7",
                     "port": 0
                 },
                 {
-                    "id": "d80a6302210948f2",
-                    "port": 1
+                    "id": "4138c2c99bcf9b47",
+                    "port": 0
                 }
             ]
         }
@@ -491,7 +491,7 @@
         "type": "junction",
         "z": "1a7ae86d5b9d3efd",
         "x": 1380,
-        "y": 440,
+        "y": 400,
         "wires": [
             []
         ]
@@ -501,7 +501,7 @@
         "type": "junction",
         "z": "1a7ae86d5b9d3efd",
         "x": 980,
-        "y": 500,
+        "y": 460,
         "wires": [
             [
                 "e7e76d36374356a7"
@@ -534,8 +534,8 @@
         "id": "536e6ac9f200a9ad",
         "type": "junction",
         "z": "1a7ae86d5b9d3efd",
-        "x": 2480,
-        "y": 300,
+        "x": 2500,
+        "y": 280,
         "wires": [
             [
                 "ecc88d0ba4909d2a"
@@ -552,6 +552,38 @@
             [
                 "2087b9e3d1081577",
                 "536e6ac9f200a9ad"
+            ]
+        ]
+    },
+    {
+        "id": "4138c2c99bcf9b47",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2700,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "63c82b53d59c54eb",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2700,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2de8ab076d6fec29",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 1820,
+        "y": 220,
+        "wires": [
+            [
+                "4148cd6724ec5746"
             ]
         ]
     },
@@ -610,6 +642,11 @@
         "rules": [
             {
                 "t": "eq",
+                "v": "logout",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
                 "v": "authenticate",
                 "vt": "str"
             },
@@ -641,10 +678,13 @@
         ],
         "checkall": "false",
         "repair": false,
-        "outputs": 6,
+        "outputs": 7,
         "x": 1310,
         "y": 160,
         "wires": [
+            [
+                "09ced1693b5071d8"
+            ],
             [
                 "dc464e9820065392"
             ],
@@ -684,11 +724,11 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1770,
+        "x": 1670,
         "y": 220,
         "wires": [
             [
-                "4148cd6724ec5746"
+                "2de8ab076d6fec29"
             ]
         ]
     },
@@ -744,8 +784,8 @@
         "initialize": "// Code added here will be run once\n// whenever the node is started.\n// Code added here will be run once\n// whenever the node is started.\n// SKstate is the state in which SignalK is in\n// 0 not connected\n// 1 connected but not subscribed\n// 2 subscribed to paths\n\nvar status = { fill: \"red\", shape: \"ring\", text: \"disconnected\" };\nflow.set(\"SKstate\", 0);\nflow.set(\"SKAutenticated\", false)\n//node.status({ fill: \"red\", shape: \"ring\", text: \"disconnected\" });\n\nreturn ({payload: status});",
         "finalize": "// Code added here will be run when the\n// node is being stopped or re-deployed.\n\nvar status = { fill: \"red\", shape: \"ring\", text: \"disconnected\" };\nflow.set(\"SKstate\", 0);\nflow.set(\"SKAutenticated\", false)\n//node.status({ fill: \"red\", shape: \"ring\", text: \"disconnected\" });\n\nreturn (null, null, { payload: status });",
         "libs": [],
-        "x": 2700,
-        "y": 500,
+        "x": 2660,
+        "y": 460,
         "wires": [
             []
         ],
@@ -766,7 +806,7 @@
         "finalize": "",
         "libs": [],
         "x": 1670,
-        "y": 80,
+        "y": 100,
         "wires": [
             [
                 "62066fcd7800e7f5"
@@ -811,8 +851,8 @@
         "scope": [
             "fa15c4cf373001e2"
         ],
-        "x": 2370,
-        "y": 540,
+        "x": 2390,
+        "y": 500,
         "wires": [
             [
                 "e7e76d36374356a7"
@@ -974,8 +1014,12 @@
         "x": 2320,
         "y": 80,
         "wires": [
-            [],
-            []
+            [
+                "63c82b53d59c54eb"
+            ],
+            [
+                "4138c2c99bcf9b47"
+            ]
         ],
         "outputLabels": [
             "Debug",
@@ -1195,6 +1239,92 @@
                 "e7e76d36374356a7",
                 "ecc88d0ba4909d2a"
             ]
+        ]
+    },
+    {
+        "id": "a29091f08f9d60a0",
+        "type": "http request",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Logout request",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "{{{baseURL}}}{{{skrequest}}}",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Content-Type",
+                "valueType": "other",
+                "valueValue": "application/json"
+            }
+        ],
+        "x": 2020,
+        "y": 40,
+        "wires": [
+            [
+                "7e994e30dd198dc3"
+            ]
+        ],
+        "info": "{{{baseURL}}}/signalk/v1/access/requests"
+    },
+    {
+        "id": "09ced1693b5071d8",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Logout",
+        "func": "var auth_token = flow.get(\"Auth-token\") || null;\nvar baseURL = env.get(\"sk_host\") || null;\nvar logoutmsg;\nvar deviceLogin = env.get(\"device_login\") || false;\n\nflow.set(\"Auth-timeout\",null);\n// Set status not to autologin\nflow.set(\"deviceLoginStatus\", 4);\nflow.set(\"SKauth\",false);\n\nif (deviceLogin) {\n  logoutmsg = {\n      requestId : uuidv4(),\n      logout: { token:auth_token}\n  };\n\n  msg.method =\"PUT\";\n  msg.baseURL = baseURL;\n  msg.skrequest = \"/signalk/v1/auth/logout\";\n  msg.payload=JSON.stringify(logoutmsg);\n  msg.headers = \"Authorization: Bearer \" + auth_token;\n  msg.cookies = {\"JAUTHENTICATION\":auth_token};\n\n  flow.set(\"Auth-token\",null);\n  return ([msg,null]);\n}\nelse {\n  logoutmsg = {\n      requestId : uuidv4(),\n      logout: { token:auth_token}\n  };\n  msg.payload=JSON.stringify(logoutmsg);\n  \n  flow.set(\"Auth-token\",null);\n  return ([null,msg]);\n}\n\nfunction uuidv4() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1650,
+        "y": 40,
+        "wires": [
+            [
+                "a29091f08f9d60a0"
+            ],
+            [
+                "4148cd6724ec5746"
+            ]
+        ],
+        "outputLabels": [
+            "REST",
+            "Websocket"
+        ]
+    },
+    {
+        "id": "7e994e30dd198dc3",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Logout response handler",
+        "func": "var usermsg={};\nvar statusmsg;\nvar SKstate = flow.get(\"SKstate\") || 0;\n\nif (msg.statusCode==200) {\n    node.log(\"Successful logout\");\n}\nelse {\n    node.log(\"Unsuccessful logout:\"+JSON.stringify(msg));\n}\n\nif (SKstate == 1) {\n    statusmsg = { fill: \"yellow\", shape: \"ring\", text: \"connected\" };\n}\nif (SKstate == 2) {\n    statusmsg = { fill: \"green\", shape: \"ring\", text: \"subscribing\" };\n}\n\nreturn ([msg,{payload:statusmsg}]);",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2370,
+        "y": 40,
+        "wires": [
+            [
+                "63c82b53d59c54eb"
+            ],
+            [
+                "4138c2c99bcf9b47"
+            ]
+        ],
+        "outputLabels": [
+            "Debug",
+            "Status"
         ]
     },
     {
@@ -1562,7 +1692,7 @@
         "type": "debug",
         "z": "22fc44da1c04c527",
         "name": "Status",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -1846,6 +1976,36 @@
         "payloadType": "num",
         "x": 150,
         "y": 580,
+        "wires": [
+            [
+                "bc56e3f9b88e740a"
+            ]
+        ]
+    },
+    {
+        "id": "d1a2c8eb429a56bc",
+        "type": "inject",
+        "z": "22fc44da1c04c527",
+        "name": "Logout",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "skaction",
+                "v": "logout",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "10",
+        "topic": "",
+        "payload": "0",
+        "payloadType": "num",
+        "x": 190,
+        "y": 660,
         "wires": [
             [
                 "bc56e3f9b88e740a"
