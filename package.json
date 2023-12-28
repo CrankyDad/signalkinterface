@@ -1,7 +1,7 @@
 {
-  "name": "signalkinterface",
-  "version": "0.0.1",
-  "description": "Nodes helping to connect to SignalK servers running locally or remotely. They also simplyfy the use of SignalK within Node Red by removing the need to construct/descobstruct SignalK messages. The idea is only use messages with the SignalK path as msg.topic and the value as payload. These nodes do not need to be run inside SignalK.",
+  "name": "@crankydad/node-red-signalkhelper",
+  "version": "1.0.0",
+  "description": "A node that abstracts communicatng with SignalK helping to connect to SignalK servers running locally or remotely. These nodes do not need to be run inside SignalK.",
   "dependencies": {
 	},
   "main": "index.js",
@@ -20,9 +20,9 @@
   "license": "GPL-3.0-or-later",
   
   "node-red" : {
+        "version": ">=2.0.0",
         "nodes": {
-            "signalkputhelper": "signalkputhelper.js",
-            "signalkhelper": "signalkhelper.js"
+            "signalkhelper": "signalkhelper-wrapper.js"
         }
   }
 }

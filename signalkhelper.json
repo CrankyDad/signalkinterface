@@ -1,0 +1,1276 @@
+{
+        "id": "1a7ae86d5b9d3efd",
+        "type": "subflow",
+        "name": "SignalK helper",
+        "info": "\nAbstracts [SignalK](https://signalk.org/) connection and server interaction\nto simplify connecting and using a SignalK server. It acts as a\nSignalK client.\nIt supports subscribing and unsubscribing by using messages on the fly or by the\nconfiguration.\nIt can also `GET` values if there only is a sporadic need of certain data\n(no need for subscribing to paths).\n\nThe SignalK helper can authenticate to the SignalK server, either by\nusername/password or by device authentication where the request needs to\nbe accepted/approved by an admin on the server.\n\nThe SignalK helper also supports `PUT` messages which is used to change a value\non the server. This is typically used for changing the status of electical switches.\nDo note that the path containing the value to be changed need to have a PUT handler\nregistered with it. The node needs to be authenticated with the right to write data.\nThe SignalK helper can't maipulate paths not having PUT handlers.\n\nThe SignalK helper indicates its status by showing:\n - Red - There is no websocket connection to the server\n - Yellow - There is a websocket connecton to the server, but no subscription of data\n - Green - There is a subscription and there are updates sent on the websocket\n\n The status shows:\n - a ring if the node is not authenticated\n - a dot if the node is authenticated\n\n---\n\n\n# Configuration\nThe node provides the following coniguration options:\n - **Device login** - Check if the node shall authenticate as a device (not username/passowrd)\n - **Client Id** - Identifier the identifes the client (node) to the server when device authentication is used\n - **Username/Password** - For a user in SignalK. The user needs write access if changes to data are to be made\n - **minPeriod** - Messages from a path will be sent with at least this internvall (not to flood the node/sever).\n \nThere are tree available subscription blocks with their own policy, paths and period.\nIf paths are left blank, the block will not be used.\n\nIf a value is left blank, the node will set a sensible default value.\n\n\n - **SK Host stream** - URL to the stream endpoint. Example ws://localhost:3000/signalk/v1/stream?subscribe=none\n - **SK Host** Base URL to the server. Example http://localhost:3000 \n\n\n#  Inputs\n`skaction`\n    The command sent to the node. The commands are:\n -  `get`             One-time fetch of data from the server. Can be a single or multiple paths. Paths are sent in the topic\n -  `add-subscribe`   subscribe to the path/paths sent in topic\n -  `unsubscribe`     unsubscribe for all paths. topic is ignored\n -  `update`          update the value of path with the value in payload\n -  `authenticate`   trigger a reauthentication to the server if the authentication has expired\n\n`topic`\n    Which path or paths the command relates to. It can either be a string with a SignalK path\n    or a JSON object with the following format {\"paths\":[path1,path2,path3]}. Pathx are all strings\n\n`payload`\n    The value that the path is to be set to. This is only used for updates\n\n## add-subscribe adds the following inputs \n`policy`, `period` and `minPeriod`\n[SignalK documentation provides information](https://signalk.org/specification/1.7.0/doc/subscription_protocol.html) about these settings.\n\n---\n\n# Outputs\nThe node has two outputs.\n## Debug\nGeneral output for error messages and internal messages sent to the websocket or HTTP request.\nUseble for debugging.\nRaw data from the websocket-in has the topic set to _websocket-in_ (useful for filering).\nThe skaction is set as `topic` (for filtering). The original topic is moved to `payload.topic`\n\n## Updates\nSends recieved data from SignalK. Messages are flattened, meaning that they only contain one path and its value per message.\nThe message are the same as messages sent by the embdded Node Red.\n -  `topic` the path the value relates to\n -  `payload` the value the path contains. This can be a number, string or an object\n -  `$source` the source as recorded by SignalK\n -  `timestamp` the date/time when the value was updated (\"2023-12-21T22:38:11.459Z\")",
+        "category": "",
+        "in": [
+            {
+                "x": 260,
+                "y": 180,
+                "wires": [
+                    {
+                        "id": "2053588ad8d165e5"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 2990,
+                "y": 220,
+                "wires": [
+                    {
+                        "id": "c59404a38e34eb0a",
+                        "port": 0
+                    },
+                    {
+                        "id": "cd0301c859dddfa3",
+                        "port": 0
+                    },
+                    {
+                        "id": "ecc88d0ba4909d2a",
+                        "port": 0
+                    },
+                    {
+                        "id": "63c82b53d59c54eb",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 2840,
+                "y": 400,
+                "wires": [
+                    {
+                        "id": "857ecbba2f499461",
+                        "port": 0
+                    },
+                    {
+                        "id": "2087b9e3d1081577",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [
+            {
+                "name": "device_login",
+                "type": "bool",
+                "value": "false",
+                "ui": {
+                    "icon": "font-awesome/fa-laptop",
+                    "label": {
+                        "en-US": "Device login"
+                    },
+                    "type": "checkbox"
+                }
+            },
+            {
+                "name": "device_clientId",
+                "type": "str",
+                "value": "1234-45653-343453",
+                "ui": {
+                    "icon": "font-awesome/fa-user-secret",
+                    "label": {
+                        "en-US": "Client Id"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "str"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "username",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "icon": "font-awesome/fa-address-book-o",
+                    "label": {
+                        "en-US": "User name"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "str"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "password",
+                "type": "cred",
+                "ui": {
+                    "icon": "font-awesome/fa-key",
+                    "label": {
+                        "en-US": "Password"
+                    }
+                }
+            },
+            {
+                "name": "minPeriod",
+                "type": "num",
+                "value": "500",
+                "ui": {
+                    "icon": "font-awesome/fa-history",
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "num"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sub1_policy",
+                "type": "str",
+                "value": "fixed",
+                "ui": {
+                    "icon": "font-awesome/fa-file-powerpoint-o",
+                    "label": {
+                        "en-US": "Sub 1 policy"
+                    },
+                    "type": "select",
+                    "opts": {
+                        "opts": [
+                            {
+                                "l": {
+                                    "en-US": "Ideal"
+                                },
+                                "v": "ideal"
+                            },
+                            {
+                                "l": {
+                                    "en-US": "Fixed"
+                                },
+                                "v": "fixed"
+                            },
+                            {
+                                "l": {
+                                    "en-US": "Instant"
+                                },
+                                "v": "instant"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sub1_paths",
+                "type": "json",
+                "value": "{\"paths\": []}",
+                "ui": {
+                    "icon": "font-awesome/fa-angle-double-up",
+                    "label": {
+                        "en-US": "Sub 1 paths"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "json"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sub1_period",
+                "type": "num",
+                "value": "3000",
+                "ui": {
+                    "icon": "font-awesome/fa-history",
+                    "label": {
+                        "en-US": "Sub 1 period"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "num"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sub2_policy",
+                "type": "str",
+                "value": "instant",
+                "ui": {
+                    "icon": "font-awesome/fa-file-powerpoint-o",
+                    "label": {
+                        "en-US": "Sub 2 policy"
+                    },
+                    "type": "select",
+                    "opts": {
+                        "opts": [
+                            {
+                                "l": {
+                                    "en-US": "Ideal"
+                                },
+                                "v": "ideal"
+                            },
+                            {
+                                "l": {
+                                    "en-US": "Fixed"
+                                },
+                                "v": "fixed"
+                            },
+                            {
+                                "l": {
+                                    "en-US": "Instant"
+                                },
+                                "v": "instant"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sub2_paths",
+                "type": "json",
+                "value": "{\"paths\":[]}",
+                "ui": {
+                    "icon": "font-awesome/fa-angle-double-right",
+                    "label": {
+                        "en-US": "Sub 2 paths"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "json"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sub2_period",
+                "type": "num",
+                "value": "500",
+                "ui": {
+                    "icon": "font-awesome/fa-clock-o",
+                    "label": {
+                        "en-US": "Sub 2 period"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "num"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sub3_paths",
+                "type": "json",
+                "value": "{\"paths\":[]}",
+                "ui": {
+                    "icon": "font-awesome/fa-angle-double-down",
+                    "label": {
+                        "en-US": "Sub 3 paths"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "json"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sub3_policy",
+                "type": "str",
+                "value": "ideal",
+                "ui": {
+                    "icon": "font-awesome/fa-file-powerpoint-o",
+                    "label": {
+                        "en-US": "Sub 3 policy"
+                    },
+                    "type": "select",
+                    "opts": {
+                        "opts": [
+                            {
+                                "l": {
+                                    "en-US": "Ideal"
+                                },
+                                "v": "ideal"
+                            },
+                            {
+                                "l": {
+                                    "en-US": "Fixed"
+                                },
+                                "v": "fixed"
+                            },
+                            {
+                                "l": {
+                                    "en-US": "Instant"
+                                },
+                                "v": "instant"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sub3_period",
+                "type": "num",
+                "value": "1000",
+                "ui": {
+                    "icon": "font-awesome/fa-clock-o",
+                    "label": {
+                        "en-US": "Sub 3 period"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "num"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sk_host_stream",
+                "type": "str",
+                "value": "ws://localhost:3000/signalk/v1/stream?subscribe=none",
+                "ui": {
+                    "icon": "font-awesome/fa-feed",
+                    "label": {
+                        "en-US": "SK Host stream"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "str"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "sk_host",
+                "type": "str",
+                "value": "http://localhost:3000",
+                "ui": {
+                    "icon": "font-awesome/fa-rss",
+                    "label": {
+                        "en-US": "SK Host"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "str"
+                        ]
+                    }
+                }
+            }
+        ],
+        "meta": {
+            "module": "@crankydad/node-red-signalkhelper",
+            "version": "1.0.0",
+            "author": "Jan Wellergård <crankydad@wellergard.se>",
+            "desc": "Node that abstracts SignalK by supporting subscription, authentication",
+            "keywords": "signalK",
+            "license": "GPL-3.0"
+        },
+        "color": "#FFCC66",
+        "inputLabels": [
+            "Input"
+        ],
+        "outputLabels": [
+            "Debug",
+            "Updates"
+        ],
+        "icon": "node-red/leveldb.svg",
+        "status": {
+            "x": 3080,
+            "y": 460,
+            "wires": [
+                {
+                    "id": "e7e76d36374356a7",
+                    "port": 0
+                },
+                {
+                    "id": "4138c2c99bcf9b47",
+                    "port": 0
+                }
+            ]
+        },
+    
+    "flow":[
+    {
+        "id": "01fcfe4eb4150c57",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "SignalK message handler",
+        "func": "var deltamsg = [];\nvar ctrlmsg = [];\nvar SKauth = flow.get(\"SKAutenticated\") || false;\nvar SKstate = flow.get(\"SKstate\") || 0;\n\n// Ignore status messages\nif (msg.payload==null || msg.status!=null || msg.payload.fill!=null) {\n    return ([null,null,null]);\n}\n\n//An error has been catched earlier, send message\n// to debug port\nif(msg.topic == \"error\") {\n    return(null,null,msg);\n}\n\n//Control message\nif (msg.topic == \"control\") {\n    if (SKauth==false) {\n        ctrlmsg.push({skaction:\"authenticate\",\n            payload:msg.payload});\n    }\n    if (SKstate!=2) {\n        ctrlmsg.push({skaction:\"subscribe\",\n            payload:msg.payload});\n    }\n    return [ctrlmsg, null, null ];\n}\n\n// A response to a request was sent\nif (msg.payload.statusCode!=null) {\n    switch (msg.payload.statusCode) {\n        case 200:\n //           node.log(\"Successfull request\")+JSON.stringify(msg.payload);\n            msg=null;\n            break;\n        case 401:\n            //Not authenticated\n            if (SKauth) {\n                // We sould be authenticated, reauthenticate\n                ctrlmsg.push({skaction:\"authenticate\",\n                    payload:msg.payload});\n                flow.set(\"SKauth\",false);\n                flow.set(\"deviceLoginStatus\",0);\n            }\n            else {\n                node.error(\"The client does not have permission to make the request as it isn't authenticated. \", msg);\n            }\n        default:\n            node.error(\"Server reported issue with request:\"+JSON.stringify(msg.payload)+\" Error:\" + msg.payload.statusCode+ \"-\"+decodeStatus(msg.payload.statusCode));\n            break;\n    }\n    return(ctrlmsg,null,msg);\n}\n\n\n// Got a message to control the websocket, forward\nif (msg.skaction!=null) {     \n    return ([msg,null,null]);\n}\n\n//Update message (Delta)\nif (msg.payload.updates != null) {\n    // Flatten\n    for (const updates of msg.payload.updates) {\n       for (const values of updates.values) {\n        deltamsg.push({topic:values.path,\n            payload:values.value,\n            source:updates.source,\n            $source:updates.$source,\n            timestamp:new Date(updates.timestamp)\n            });\n       } \n    }\n    return [null, deltamsg, null ];\n}\n\nfunction decodeStatus(statuscode) {\n    var statusText;\n    switch (statuscode) {\n        case 400:\n            statusText =\"something is wrong with the client's request\";\n            break;\n        case 401:\n            statusText =\"the request has not been applied because it lacks valid authentication credentials\";\n            break;\n        case 403:\n            statusText=\"the client does not have permission to make the request\";\n            break;\n        case 405:\n            statusText = \"the server does not support the request\"\n            break;\n        case 502:\n            statusText =\"something went wrong carrying out the request on the server side\";\n            break;\n        case 504:\n            statusText =\"timeout on the server side trying to carry out the request\";\n            break;\n        default:\n            statusText=\"Unknown/Undocumented error\";\n            break;\n    }\n    return (statusText);\n}\n// 200 - the request was successful\n// 400 - something is wrong with the client's request\n// 401 - the request has not been applied because it lacks valid authentication credentials\n// 403 - the client does not have permission to make the request\n// 405 - the server does not support the request\n// 502 - something went wrong carrying out the request on the server side\n// 504 - timeout on the server side trying to carry out the request",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 180,
+        "wires": [
+            [
+                "8d9d956cdf342171"
+            ],
+            [
+                "857ecbba2f499461"
+            ],
+            [
+                "dc39bf3a1d3f286f"
+            ]
+        ],
+        "inputLabels": [
+            "SK message in"
+        ],
+        "outputLabels": [
+            "SK control",
+            "SK deltas",
+            "SK errors"
+        ],
+        "info": "# SignalK message sort\n# This module separates incomming messages and creates\nmessages on the following outputs\n 1. SK control\n 2. SK deltas\n 3. SK errors\n\n The control shall be tied directly to the websocket out node.\n The node sends its control messages such as authentication and subscriptions messages here\n\n The SK deltas sends a \"flattend\" (only one delta per message) stream of deltas."
+    },
+    {
+        "id": "8d9d956cdf342171",
+        "type": "switch",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Send relevant message",
+        "property": "skaction",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "logout",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "authenticate",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "subscribe",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "add-subscribe",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "unsubscribe",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "update",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "get",
+                "vt": "str"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 7,
+        "x": 1310,
+        "y": 160,
+        "wires": [
+            [
+                "09ced1693b5071d8"
+            ],
+            [
+                "dc464e9820065392"
+            ],
+            [
+                "e171e39472c77f0c"
+            ],
+            [
+                "e552a53062880a36"
+            ],
+            [
+                "a09005681c99d92a"
+            ],
+            [
+                "7684b1f71435316a"
+            ],
+            [
+                "9a11f4a8ab0267dd"
+            ]
+        ]
+    },
+    {
+        "id": "a09005681c99d92a",
+        "type": "change",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Unsubscribe",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{\"context\":\"*\",\"unsubscribe\":[{\"path\":\"*\"}]}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1610,
+        "y": 220,
+        "wires": [
+            [
+                "2de8ab076d6fec29"
+            ]
+        ]
+    },
+    {
+        "id": "7684b1f71435316a",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Create update message",
+        "func": "var path_update={};\nvar auth_token = flow.get(\"Auth-token\") || null;\nvar baseURL = env.get(\"sk_host\") || null;\nvar deviceLogin = env.get(\"device_login\") || false;\nvar clientId = env.get(\"device_clientId\") || \"1234-45653-343453\";\n\nif (!deviceLogin) {\n  ///////////////////////////////////////////////////\n  // Update via Websocket \n  ///////////////////////////////////////////////////\n  path_update = {\n          requestId: uuidv4(),\n //         token:auth_token,\n          put:{\n              path:msg.topic,\n              value:msg.payload,\n          }\n  };\n\n  msg.topic=\"update\";\n  msg.payload = JSON.stringify(path_update);\n}\n\n/////////////////////////////////////////////////////\n// Update via REST method\n/////////////////////////////////////////////////////\nelse {\n  path_update={\n    \"value\":msg.payload\n//    \"source\": \"NodeRed client \"+clientId\n  };\n\n  msg.method =\"PUT\";\n  msg.baseURL = baseURL;\n  msg.skrequest = \"/signalk/v1/api/vessels/self/\" + msg.topic.replaceAll(\".\",\"/\"),\n  msg.payload = JSON.stringify(path_update);\n  msg.headers = \"Authorization: Bearer \" + auth_token;\n  msg.cookies = {\"JAUTHENTICATION\":auth_token};\n}\n\n//node.log(\"Updating value in SK: \" + JSON.stringify(msg));\nreturn msg;\n\n\nfunction uuidv4() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1650,
+        "y": 280,
+        "wires": [
+            [
+                "f6b7428f9be2864e"
+            ]
+        ]
+    },
+    {
+        "id": "e552a53062880a36",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Create additional subscribe",
+        "func": "var subscription=[];\nvar submessage;\nvar period = msg.period || 3000;\nvar minPeriod = msg.minPeriod || 500; \nvar policy = msg.policy || \"ideal\";\n\nif (msg.topic.paths!=null) {\n   msg.payload=msg.topic;\n}\nelse {\n    msg.payload = {paths: new Array(msg.topic)};\n}\n\nif (policy!=\"instant\" && policy!=\"ideal\" && policy!=\"fixed\") {\n    node.warn(\"Illegal value for policy. Policy set to ideal.\");\n    policy=\"ideal\";\n}\n\nif (period<=0) {\n    node.warn(\"Illegal value for period. Period set 3000:\");\n    period=3000;\n}\n\nif (minPeriod<=0) {\n    node.warn(\"Illegal value for minPeriod. Period set 500:\");\n    minPeriod=500;\n}\n\nif (!Array.isArray(msg.payload.paths) || msg.payload==null ) {\n    node.warn(\"Illegal value for paths for policy \" + policy + \" Paths set to empty.\");\n    return (null);\n}\n\nif (msg.payload.paths.length==0) {\n    node.log(\"Empty paths for policy \"+policy);\n    return (null);\n}\n\nswitch (policy) {\n    case \"instant\":\n        for (const subPaths of msg.payload.paths) {\n            subscription.push({\n                path: subPaths,\n                minPeriod: minPeriod,\n                format: \"delta\",\n                policy: policy\n            });\n        }\n        break;\n    case \"ideal\":\n        for (const subPaths of msg.payload.paths) {\n            subscription.push({\n                path: subPaths,\n                //period: period,\n               // format: \"delta\",\n                policy: policy\n               // minPeriod : minPeriod\n            });\n        }\n        break;\n    case \"fixed\":\n        for (const subPaths of msg.payload.paths) {\n            subscription.push({\n                path: subPaths,\n                period: period,\n                format: \"delta\",\n                policy: policy\n            });\n        }\n        break;\n}\n\nsubmessage = {\n    context:\"vessels.self\",\n    subscribe:subscription\n}\n\nmsg.payload=JSON.stringify(submessage);\nmsg.topic=\"subscribe\";\nreturn (msg);\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1660,
+        "y": 180,
+        "wires": [
+            [
+                "4148cd6724ec5746"
+            ]
+        ]
+    },
+    {
+        "id": "e7e76d36374356a7",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Status indicator",
+        "func": "//var statusmsg;\n//var errorMsg=null;\nvar SKauth = flow.get(\"SKAutenticated\") || false;\nvar SKstate = flow.get(\"SKstate\") || 0;\n\n// Got a status message from the websocket.\nif (msg.status!=null) {\n    msg.payload = msg.status.text;\n    if (msg.status.text==\"common.status.disconnected\" || msg.status.text==\"common.status.error\") {\n        flow.set(\"SKAutenticated\",false);\n        flow.set(\"SKstate\",0);\n        node.error(\"Websocket error: \"+msg.payload);\n    }\n    else {\n        node.log(\"Websocket reconnect: \"+msg.payload);\n    }\n}\n\nreturn ({ payload: getStatus(SKauth,SKstate) });\n\n/**\n* @param {Boolean} isAuth\n* @param {Number} sk_state\n*/\nfunction getStatus(isAuth, sk_state) {\n    var smsg;\n    switch (sk_state) {\n        case 0:\n            smsg={ fill: \"red\", shape: \"ring\", text: \"disconnected\" };\n            break;\n        case 1:\n            if (isAuth) {\n                smsg = { fill: \"yellow\", shape: \"dot\", text: \"authenticated\" };\n            }\n            else {\n                smsg = { fill: \"yellow\", shape: \"ring\", text: \"connected\" };\n            }\n            break;\n        case 2:\n            if (isAuth) {\n                smsg = { fill: \"green\", shape: \"dot\", text: \"authenticated and subscribing\" };\n            }\n            else {\n                smsg = { fill: \"green\", shape: \"ring\", text: \"subscribing\" };\n            }\n            break;\n    }\n    return (smsg);\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\n// Code added here will be run once\n// whenever the node is started.\n// SKstate is the state in which SignalK is in\n// 0 not connected\n// 1 connected but not subscribed\n// 2 subscribed to paths\n\nvar status = { fill: \"red\", shape: \"ring\", text: \"disconnected\" };\nflow.set(\"SKstate\", 0);\nflow.set(\"SKAutenticated\", false)\n//node.status({ fill: \"red\", shape: \"ring\", text: \"disconnected\" });\n\nreturn ({payload: status});",
+        "finalize": "// Code added here will be run when the\n// node is being stopped or re-deployed.\n\nvar status = { fill: \"red\", shape: \"ring\", text: \"disconnected\" };\nflow.set(\"SKstate\", 0);\nflow.set(\"SKAutenticated\", false)\n//node.status({ fill: \"red\", shape: \"ring\", text: \"disconnected\" });\n\nreturn (null, null, { payload: status });",
+        "libs": [],
+        "x": 2660,
+        "y": 460,
+        "wires": [
+            []
+        ],
+        "outputLabels": [
+            "Messages"
+        ]
+    },
+    {
+        "id": "dc464e9820065392",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Authenticate",
+        "func": "var authmsg;\nvar devicemsg=null;\nvar usermsg=null;\nvar username = env.get(\"username\");\nvar password = env.get(\"password\");\nvar auth_req = flow.get(\"Auth-request\") || null;\nvar auth_token = flow.get(\"Auth-token\") || null;\nvar deviceLogin = env.get(\"device_login\") || false;\nvar deviceLoginStatus = flow.get(\"deviceLoginStatus\") || -1;\nvar baseURL = env.get(\"sk_host\") || null;\nvar clientId = env.get(\"device_clientId\") || \"1234-45653-343453\";\nvar reqID;\nvar isauth=false;\nvar auth_timer = (msg.topic == \"authenticate_timer\");\n\n//node.log(\"deviceLoginStatus:\"+deviceLoginStatus);\n\n//Only run if device login and timer\nif (deviceLogin) {\n//if (deviceLogin==true && msg.topic==\"authenticate_timer\") {\n  isauth=true;\n  devicemsg = msg;\n\n  switch (deviceLoginStatus) {\n    case -1:\n      // Check if we are already logged in (having a token)\n      if (auth_token!=null && auth_token.length>10) {\n        flow.set(\"deviceLoginStatus\",3);\n        flow.set(\"SKauth\",true);\n        devicemsg=null;\n        node.log(\"Already having a device token\");\n        break;\n      }\n      // Send a poll message to the SK server ()\n      if(auth_req!=null && auth_req.length>10) {\n //       node.log(\"Checking server if we are already authenticated\");\n        devicemsg.method =\"GET\";\n        //devicemsg.payload = authmsg;\n        devicemsg.skrequest = auth_req;\n        devicemsg.baseURL = baseURL;\n //       node.log(\"Polling device request for auth:  \" + JSON.stringify(devicemsg));\n        break;\n      }\n      else {\n //       node.log(\"No request to validate\");\n        // Start authentication by skipping into deviceLoginStatus==0\n        flow.set(\"Auth-request\",null);\n        flow.set(\"deviceLoginStatus\",0);\n      }\n    \n    case 0:\n      //Create a device auth message (init)\n      authmsg = {\n        clientId : clientId,\n        description : \"SignalK helper for NodeRed\"\n      };\n      devicemsg.method =\"POST\";\n      devicemsg.payload = authmsg;\n      devicemsg.baseURL = baseURL;\n      devicemsg.skrequest = \"/signalk/v1/access/requests\";\n   //   node.log(\"Sending device request for auth:  \" + JSON.stringify(devicemsg));\n      break;\n    case 1:\n    // Send a poll message to the SK server ()\n    //  node.log(\"Polling\")\n      devicemsg.method =\"GET\";\n      devicemsg.payload = authmsg;\n      devicemsg.skrequest = flow.get(\"Auth-request\");\n      devicemsg.baseURL = baseURL;\n    //  node.log(\"Polling device request for auth:  \" + JSON.stringify(devicemsg));\n      break;\n    case 2:\n      //Just autenticated but this should not happen\n     // node.warn(\"Timer message when device login is in status done slipped through\");\n      devicemsg=null;\n      break;\n    case 3:\n      // Check that the token is still valid - no effect as of today \n      //   /signalk/«version»/auth/validate\n      //reqID = uuidv4();\n      //flow.set(\"Validate_reqID\",reqID);\n      // devicemsg.method = \"GET\";\n      // // devicemsg.payload = {\n      // //   requestId: reqID,\n      // //   validate: { token: flow.get(\"Auth-token\") }\n      // // };\n      // //devicemsg.auth_token = \"Bearer \" + flow.get(\"Auth-token\");\n      // devicemsg.skrequest = \"/signalk/v1/auth/validate\";\n      // devicemsg.baseURL = baseURL;\n      // devicemsg.cookies = { token: flow.get(\"Auth-token\") };\n      // node.log(\"Checking server if we are still authenticated: \"+ JSON.stringify(devicemsg));\n      devicemsg = null;\n      break;\n    case 4:\n      // This should never happen as these messages are dropped earlier\n      devicemsg = null;\n      break;\n    case 5:\n      // We have been logged out and need to reauthenticate\n      flow.set(\"Auth-request\", null);\n      flow.set(\"Auth-token\",null);\n      flow.set(\"deviceLoginStatus\", 0);\n      devicemsg = null;\n      break;\n    default:\n      // This done but should never arrvice\n      devicemsg=null;\n      node.warn(\"Timer message sent unkown value.\"+deviceLoginStatus);\n  }\n}\n\n// Authentcate with username + password\n// Do nothing if we were poked by the timer (for now)\nelse {\n  if(!auth_timer) {\n    if (username!=null && username.length!=0) {\n      msg.topic=\"authenticate\";\n      reqID = uuidv4();\n      authmsg = {\n          requestId:reqID,\n          login : {\n              username: username,\n              password: password \n          }\n      };\n      usermsg=msg;\n      usermsg.payload=authmsg;\n      flow.set(\"Auth-request\", reqID);\n   //   node.log(\"Send username/password request with id:\" + reqID);\n      isauth=true;\n    }\n\n    if (isauth==false && !deviceLogin) {\n      node.log(\"No credentials given. Client not authenticated\");\n    }\n  }\n}\n\n//node.log(\"Auth token:\"+flow.get(\"Auth-token\"));\nreturn [devicemsg,usermsg];\n\n\nfunction uuidv4() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nvar deviceLogin = env.get(\"device_login\") || false;\nvar baseURL = env.get(\"sk_host\") || null;\n\nif (deviceLogin && baseURL==null) {\n    node.warn(\"Missing base URL for sending authentication requests. Review setting\");\n}\n\n// 0 - Node start, status unkown.\n// 0 - No request has been sent. Not authenticated\n// 1 - Request has been sent and awaiting approval\n// 2 - Request reply processed - Authenticted\n// 3 - Flow is authenticated an monitor the token\n// 4 - Turned off\nflow.set(\"deviceLoginStatus\", -1);",
+        "finalize": "",
+        "libs": [],
+        "x": 1610,
+        "y": 100,
+        "wires": [
+            [
+                "62066fcd7800e7f5"
+            ],
+            [
+                "4148cd6724ec5746"
+            ]
+        ]
+    },
+    {
+        "id": "fa15c4cf373001e2",
+        "type": "websocket in",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "WS Stream In",
+        "server": "",
+        "client": "a75b33555d8ead73",
+        "x": 310,
+        "y": 260,
+        "wires": [
+            [
+                "de5195269abbc993",
+                "2053588ad8d165e5"
+            ]
+        ]
+    },
+    {
+        "id": "488d539adb5b12f5",
+        "type": "websocket out",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "SK Websocket out",
+        "server": "",
+        "client": "a75b33555d8ead73",
+        "x": 2250,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "34ae2e479370838f",
+        "type": "status",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "WS Stream In status",
+        "scope": [
+            "fa15c4cf373001e2"
+        ],
+        "x": 2390,
+        "y": 500,
+        "wires": [
+            [
+                "e7e76d36374356a7"
+            ]
+        ]
+    },
+    {
+        "id": "e171e39472c77f0c",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Subscriber",
+        "func": "var subscription = [];\nvar sub_no;\nvar submessage;\nvar policy;\nvar paths;\nvar env_paths;\nvar period;\nvar minPeriod = env.get(\"minPeriod\") || 500;\n\n// Lop through all 3 subscriptions\n// defined as environment variables\nfor (let i = 1; i < 4; i++) {\n    sub_no = \"sub\" + i + \"_\";\n    period = env.get(sub_no + \"period\") || 3000;\n    policy = env.get(sub_no + \"policy\") || \"ideal\";\n    env_paths = env.get(sub_no + \"paths\");\n    paths=env_paths.paths;\n\n    if (policy != \"instant\" && policy != \"ideal\" && policy != \"fixed\") {\n        node.warn(\"Illegal value for policy. Policy set to ideal.\");\n        policy = \"ideal\";\n    }\n\n    if (period <= 0) {\n        node.warn(\"Illegal value for period. Period set 3000:\");\n        period = 3000;\n    }\n\n    if (minPeriod <= 0) {\n        node.warn(\"Illegal value for minPeriod. Period set 500:\");\n        minPeriod = 500;\n    }\n\n    if (!Array.isArray(paths) || paths == null) {\n        node.warn(\"Illegal value for paths for policy \" + policy + \" Paths set to empty.\");\n    }\n\n    if (paths.length == 0) {\n        node.log(\"Empty paths for subscription sub\" + i);\n    }\n\n    switch (policy) {\n        case \"instant\":\n            for (const subPaths of paths) {\n                subscription.push({\n                    path: subPaths,\n                    minPeriod: minPeriod,\n                    format: \"delta\",\n                    policy: policy\n                });\n            }\n            break;\n        case \"ideal\":\n            for (const subPaths of paths) {\n                subscription.push({\n                    path: subPaths,\n                    period: period,\n                    format: \"delta\",\n                    policy: policy,\n                    minPeriod : minPeriod\n                });\n            }\n            break;\n        case \"fixed\":\n            for (const subPaths of paths) {\n                subscription.push({\n                    path: subPaths,\n                    period: period,\n                    format: \"delta\",\n                    policy: policy\n                });\n            }\n            break;\n    }\n}\nsubmessage = {\n    context: \"vessels.self\",\n    subscribe: subscription\n}\n\nmsg.payload = JSON.stringify(submessage);\nmsg.topic = \"subscribe\";\nreturn (msg);\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1610,
+        "y": 140,
+        "wires": [
+            [
+                "4148cd6724ec5746"
+            ]
+        ]
+    },
+    {
+        "id": "de5195269abbc993",
+        "type": "change",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Add topic websocket in",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "websocket-in",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 960,
+        "y": 260,
+        "wires": [
+            [
+                "dc39bf3a1d3f286f"
+            ]
+        ]
+    },
+    {
+        "id": "62066fcd7800e7f5",
+        "type": "http request",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Device request",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "{{{baseURL}}}{{{skrequest}}}",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Content-Type",
+                "valueType": "other",
+                "valueValue": "application/json"
+            }
+        ],
+        "x": 2020,
+        "y": 80,
+        "wires": [
+            [
+                "d80a6302210948f2"
+            ]
+        ],
+        "info": "{{{baseURL}}}/signalk/v1/access/requests"
+    },
+    {
+        "id": "2053588ad8d165e5",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "SK pre-parser",
+        "func": "var skmsg;\nvar SKstate = flow.get(\"SKstate\") || 0;\nvar deviceLoginStatus = flow.get(\"deviceLoginStatus\") || 0;\nvar deviceLogin = env.get(\"device_login\") || false;\n\n// Act on autentication timer messages\nif (msg.topic == \"authenticate_timer\") {\n\n    // Drop message if device auth not used or disabled\n    if (!deviceLogin || deviceLoginStatus == 4 ) {\n        node.log(\"Got device authentication timer msg but not using device authentication.\");\n        return([null,null]);\n    }\n\n// Device now authenticated using device authentication.\n// Update status\n    if (deviceLoginStatus == 3 && !flow.get(\"SKAutenticated\")) {\n //       node.log(\"Device authenticated. Updating node status\");\n        flow.set(\"SKAutenticated\", true);\n        msg.topic = \"authenticated\"\n        return ([null, msg]);\n    }\n\n    // Try reauthenticate\n    // if an action requiring authentication failed\n    if (deviceLoginStatus == 5 && flow.get(\"SKAutenticated\")) {\n        flow.set(\"deviceLoginStatus\",0);\n        flow.set(\"SKAutenticated\", false);\n        flow.set(\"Auth-request\",null);\n        flow.set(\"Auth-token\",null);\n        flow.set(\"SKAutenticated\", false);\n        msg.topic = \"authenticated\"\n        return ([null, msg]);\n    }\n}\n\n// Got a control message (internal Node red message)\n// Just forward, but if unsubscribe also tell the status node\nif(msg.skaction!=null) {\n    if (msg.skaction == \"unsubscribe\") {\n        node.log(\"Unsubscribed\");\n        flow.set(\"SKstate\", 1);\n        msg.topic =\"unsubscribe\"\n        return ([msg, msg]);\n    }\n\n    // Try reauthenticate\n    // Invoked by the user or\n    if (msg.skaction == \"authenticate\" && msg.topic!=\"authenticate_timer\") {\n       node.log(\"Reauthentication requested\");\n       flow.set(\"deviceLoginStatus\",0);\n       flow.set(\"SKAutenticated\", false);\n       flow.set(\"Auth-request\",null);\n       flow.set(\"Auth-token\",null);\n       msg.topic =\"authenticate\"\n       \n       return ([msg, msg]);\n    }\n    \n    return ([msg,null]);\n}\n\n// We have got a JSON message from SignalK. Parse it\ntry {\n    skmsg = JSON.parse(msg.payload);\n    msg.payload = skmsg;\n}\ncatch (e) {\n    node.error(\"Got a non JSON message:\"+e, msg.payload);\n    return ([null,null]);\n}\n\n\n// We got the first message after connection to the websocket.\nif (skmsg.name != null) {\n    flow.set(\"SKAutenticated\", false);\n    flow.set(\"SKstate\", 1);\n    node.log(\"Websocket ready for commands\");\n\n    //  Notify helper to authenticate and subscribe\n    msg.topic = \"control\";\n    return ([msg, msg]);\n}\n\n// Got a message regarding a successful login with uname/password\nif (skmsg.state == \"COMPLETED\" && skmsg.statusCode==200 && skmsg.login!=null) {\n    flow.set(\"SKAutenticated\", true);\n    flow.set(\"Auth-token\",skmsg.login.token)\n    msg.topic =\"authenticated\"\n    return ([null, msg]);\n}\n\n// Check if device is authenticated\n// Set flow into monitoring the token given\nif (deviceLoginStatus == 2) {\n    flow.set(\"SKAutenticated\", true);\n    msg.topic =\"authenticated\"\n    flow.set(\"deviceLoginStatus\",3)\n    return ([null, msg]);\n}\n\n// Failed authentication using username/password\nif (skmsg.state == \"COMPLETED\" && skmsg.statusCode==401) {\n    flow.set(\"SKAutenticated\", false);\n    node.error(\"Login to SignalK failed: \" + msg.payload);\n    msg.topic=\"noauthentication\";\n    return ([null,msg]);\n}\n\n// We are getting updates as we are subscribing\nif (skmsg.updates != null && SKstate!=2) {\n    flow.set(\"SKstate\", 2);\n//    node.log(\"Getting updates\");\n    msg.topic=\"subscribing\"\n    return ([msg, msg]);\n}\n//Default, just forward message to the helper\nreturn ([msg,null]);",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 180,
+        "wires": [
+            [
+                "01fcfe4eb4150c57"
+            ],
+            [
+                "e414ec81c8407664"
+            ]
+        ],
+        "outputLabels": [
+            "messages",
+            "status"
+        ]
+    },
+    {
+        "id": "18462bc63a44b984",
+        "type": "inject",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Check status device request",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            },
+            {
+                "p": "skaction",
+                "v": "authenticate",
+                "vt": "str"
+            }
+        ],
+        "repeat": "30",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "authenticate_timer",
+        "payload": "deviceLoginStatus",
+        "payloadType": "flow",
+        "x": 370,
+        "y": 100,
+        "wires": [
+            [
+                "2053588ad8d165e5"
+            ]
+        ]
+    },
+    {
+        "id": "d80a6302210948f2",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Device authentication response handler",
+        "func": "var reqID;\nvar statusmsg=null;\nvar SKauth = flow.get(\"SKAutenticated\") || false;\nvar SKstate = flow.get(\"SKstate\") || 0;\nvar deviceLoginStatus = flow.get(\"deviceLoginStatus\") || 0;\n\n// Successful request to create a token\nif (msg.statusCode==202 && msg.payload.statusCode==202) {\n    reqID=msg.payload.href;\n    flow.set(\"deviceLoginStatus\", 1);\n    flow.set(\"Auth-request\", reqID);\n    node.log(\"Successful request to create a token. href:\"+reqID);\n}\n\n//We are checking if there is a token or request already\n\nif (msg.statusCode==200 && msg.payload.statusCode==202 && msg.payload.state==\"PENDING\") {\n//    node.log(\"Waiting for approval for device authentication\");\n    flow.set(\"deviceLoginStatus\", 1);\n}\n\n// The server approved or denied access\nif (msg.payload.statusCode==200 && msg.payload.state==\"COMPLETED\") {\n    switch (msg.payload.accessRequest.permission) {\n        case \"DENIED\":\n            node.error(\"Device autentication has been denied by server. Pass an autenticate message to reauthenticate\");\n            flow.set(\"deviceLoginStatus\", 4);\n            flow.set(\"Auth-request\", null);\n            break;\n        case \"APPROVED\":\n        // Only update if we are not in monitoring\n            if(deviceLoginStatus!=3 ) {\n                flow.set(\"Auth-token\",msg.payload.accessRequest.token);\n                flow.set(\"Auth-timeout\",msg.payload.accessRequest.expirationTime);\n                flow.set(\"Auth-request\", null);\n                flow.set(\"deviceLoginStatus\", 3);\n                flow.set(\"SKauth\",true);\n                if (SKstate == 1) {\n                    statusmsg = { fill: \"yellow\", shape: \"dot\", text: \"authenticated\" };\n                }\n                if (SKstate == 2) {\n                    statusmsg = { fill: \"green\", shape: \"dot\", text: \"authenticated and subscribing\" };\n                }\n                node.log(\"Device autentication has been approved by server. Expires:\"+msg.payload.accessRequest.expirationTime);\n            }\n            break;\n    }\n}\n\n// We sent a new request but one is already pending\n// Skip to polling for token\nif (msg.statusCode==400) {\n    if(msg.payload.message.indexOf(\"has already requested access\")>0) {\n//        node.log(\"Repeated device authentication:\" + msg.payload.message);\n        flow.set(\"deviceLoginStatus\", 1);\n        reqID=msg.payload.href;\n        flow.set(\"Auth-request\", reqID);\n    }\n}\n\n// We got a 501 as the server has not implemented\n// access requests. Turn off device auth\nif (msg.statusCode==501) {\n    node.error(\"Server does not support access requests. Use username/password instead\");\n    flow.set(\"deviceLoginStatus\", 4);\n}\n\n// We got a 500 , probably as we polled a non valid request\n// If this happens at flow start, initiate authentication\nif (msg.statusCode==500) {\n    node.log(\"Server error, probably no previous device logins found. Requesting a new device authentication\");\n    flow.set(\"deviceLoginStatus\", 0);\n    flow.set(\"Auth-request\", null);\n}\n\nif (statusmsg!=null) {\n    return ([msg, { payload: statusmsg }]);\n}\nelse {\n    return ([msg,null]);\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2320,
+        "y": 80,
+        "wires": [
+            [
+                "63c82b53d59c54eb"
+            ],
+            [
+                "4138c2c99bcf9b47"
+            ]
+        ],
+        "outputLabels": [
+            "Debug",
+            "Status"
+        ]
+    },
+    {
+        "id": "7a44d17c8adb8a73",
+        "type": "http request",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "GET request",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "{{{baseURL}}}{{{skrequest}}}",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Content-Type",
+                "valueType": "other",
+                "valueValue": "application/json"
+            }
+        ],
+        "x": 2150,
+        "y": 320,
+        "wires": [
+            [
+                "d8dcb1a55dfd3739"
+            ]
+        ],
+        "info": "{{{baseURL}}}/signalk/v1/access/requests"
+    },
+    {
+        "id": "9a11f4a8ab0267dd",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Create GET message",
+        "func": "var getPaths;\nvar submessage;\nvar subPaths;\nvar skrequest_base=\"/signalk/v1/api/vessels/self/\";\nvar GETmsgs=new Array();\nvar baseURL = env.get(\"sk_host\") || null;\n\nvar useWS = false;\n\nif (msg.topic.paths!=null) {\n   getPaths=msg.topic.paths;\n}\nelse {\n    getPaths = new Array(msg.topic);\n}\n\n//Create REST GET messages\nfor (const subPaths of getPaths) {\n    \n    GETmsgs.push({\n        method:\"GET\",\n        skrequest: skrequest_base + subPaths.replaceAll(\".\",\"/\"),\n        skaction:msg.skaction,\n        baseURL : baseURL,\n        topic : subPaths\n    });\n}\n//node.log(\"GET:ing values massage:\"+JSON.stringify(GETmsgs));\nreturn ([GETmsgs]);\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1640,
+        "y": 320,
+        "wires": [
+            [
+                "097a2846658bd247"
+            ]
+        ]
+    },
+    {
+        "id": "2087b9e3d1081577",
+        "type": "change",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Adapt response",
+        "rules": [
+            {
+                "t": "set",
+                "p": "$source",
+                "pt": "msg",
+                "to": "payload.$source",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.timestamp",
+                "tot": "msg",
+                "dc": true
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.value",
+                "tot": "msg",
+                "dc": true
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 2580,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "cd0301c859dddfa3",
+        "type": "catch",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Error catcher",
+        "scope": null,
+        "uncaught": true,
+        "x": 2750,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "097a2846658bd247",
+        "type": "delay",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Rate control",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "3",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1950,
+        "y": 320,
+        "wires": [
+            [
+                "7a44d17c8adb8a73"
+            ]
+        ]
+    },
+    {
+        "id": "2a6a74cab871a1de",
+        "type": "http request",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "PUT request",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "{{{baseURL}}}{{{skrequest}}}",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Content-Type",
+                "valueType": "other",
+                "valueValue": "application/json"
+            }
+        ],
+        "x": 2130,
+        "y": 260,
+        "wires": [
+            [
+                "37df6797858f75e1"
+            ]
+        ],
+        "info": "{{{baseURL}}}/signalk/v1/access/requests"
+    },
+    {
+        "id": "f6b7428f9be2864e",
+        "type": "switch",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Switch for ws-REST",
+        "property": "method",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "null"
+            },
+            {
+                "t": "nnull"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 1900,
+        "y": 240,
+        "wires": [
+            [
+                "488d539adb5b12f5",
+                "ecc88d0ba4909d2a"
+            ],
+            [
+                "2a6a74cab871a1de"
+            ]
+        ]
+    },
+    {
+        "id": "37df6797858f75e1",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Act on error",
+        "func": "var deviceLoginStatus = flow.get(\"deviceLoginStatus\") || -1;\n\nif (msg.statusCode==401) {\n    // Not authenticated any more nullify token\n    flow.set(\"Auth-token\",null);\n    flow.set(\"SKAutenticated\",false);\n    if (deviceLoginStatus==3) {\n        // We were logged in but failed any way\n        // Set status for reauthentication (5)\n        flow.set(\"deviceLoginStatus\", 5);\n    }\n}\n\nif (msg.statusCode!=200) {\n    node.error(\"PUT request failed:\"+JSON.stringify(msg.payload) +\"   \"+decodeStatus(msg.statusCode) );\n}\n\nreturn msg;\n\n/**\n* @param {Number} statuscode\n*/\nfunction decodeStatus(statuscode) {\n    var statusText;\n    switch (statuscode) {\n        case 400:\n            statusText =\"Something is wrong with the client's request.\";\n            break;\n        case 401:\n            statusText =\"The request has not been applied because it lacks valid authentication credentials.\";\n            break;\n        case 403:\n            statusText=\"The client does not have permission to make the request. Trying to change a path with no PUT handler\";\n            break;\n        case 405:\n            statusText = \"The server does not support the request.\"\n            break;\n        case 502:\n            statusText =\"Something went wrong carrying out the request on the server side.\";\n            break;\n        case 504:\n            statusText =\"Timeout on the server side trying to carry out the request.\";\n            break;\n        default:\n            statusText=\"Unknown/Undocumented error.\";\n            break;\n    }\n    return (statusText);\n}\n\n\n\nfunction getStatus(isAuth, sk_state) {\n    var smsg;\n    switch (sk_state) {\n        case 0:\n            smsg={ fill: \"red\", shape: \"ring\", text: \"disconnected\" };\n            break;\n        case 1:\n            if (isAuth) {\n                smsg = { fill: \"yellow\", shape: \"dot\", text: \"authenticated\" };\n            }\n            else {\n                smsg = { fill: \"yellow\", shape: \"ring\", text: \"connected\" };\n            }\n            break;\n        case 2:\n            if (isAuth) {\n                smsg = { fill: \"green\", shape: \"dot\", text: \"authenticated and subscribing\" };\n            }\n            else {\n                smsg = { fill: \"green\", shape: \"ring\", text: \"subscribing\" };\n            }\n            break;\n    }\n    return (smsg);\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2330,
+        "y": 260,
+        "wires": [
+            [
+                "e7e76d36374356a7",
+                "ecc88d0ba4909d2a"
+            ]
+        ]
+    },
+    {
+        "id": "a29091f08f9d60a0",
+        "type": "http request",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Logout request",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "{{{baseURL}}}{{{skrequest}}}",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "Content-Type",
+                "valueType": "other",
+                "valueValue": "application/json"
+            }
+        ],
+        "x": 2020,
+        "y": 40,
+        "wires": [
+            [
+                "7e994e30dd198dc3"
+            ]
+        ],
+        "info": "{{{baseURL}}}/signalk/v1/access/requests"
+    },
+    {
+        "id": "09ced1693b5071d8",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Logout",
+        "func": "var auth_token = flow.get(\"Auth-token\") || null;\nvar baseURL = env.get(\"sk_host\") || null;\nvar logoutmsg;\nvar deviceLogin = env.get(\"device_login\") || false;\n\nflow.set(\"Auth-timeout\",null);\n// Set status not to autologin\nflow.set(\"deviceLoginStatus\", 4);\nflow.set(\"SKauth\",false);\n\nif (deviceLogin) {\n  logoutmsg = {\n      requestId : uuidv4(),\n      logout: { token:auth_token}\n  };\n\n  msg.method =\"PUT\";\n  msg.baseURL = baseURL;\n  msg.skrequest = \"/signalk/v1/auth/logout\";\n  msg.payload=JSON.stringify(logoutmsg);\n  msg.headers = \"Authorization: Bearer \" + auth_token;\n  msg.cookies = {\"JAUTHENTICATION\":auth_token};\n\n  flow.set(\"Auth-token\",null);\n  return ([msg,null]);\n}\nelse {\n  logoutmsg = {\n      requestId : uuidv4(),\n      logout: { token:auth_token}\n  };\n  msg.payload=JSON.stringify(logoutmsg);\n  \n  flow.set(\"Auth-token\",null);\n  return ([null,msg]);\n}\n\nfunction uuidv4() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1590,
+        "y": 60,
+        "wires": [
+            [
+                "a29091f08f9d60a0"
+            ],
+            [
+                "4148cd6724ec5746"
+            ]
+        ],
+        "outputLabels": [
+            "REST",
+            "Websocket"
+        ]
+    },
+    {
+        "id": "7e994e30dd198dc3",
+        "type": "function",
+        "z": "1a7ae86d5b9d3efd",
+        "name": "Logout response handler",
+        "func": "var usermsg={};\nvar statusmsg;\nvar SKstate = flow.get(\"SKstate\") || 0;\n\nif (msg.statusCode==200) {\n    node.log(\"Successful logout\");\n}\nelse {\n    node.log(\"Unsuccessful logout:\"+JSON.stringify(msg));\n}\n\nif (SKstate == 1) {\n    statusmsg = { fill: \"yellow\", shape: \"ring\", text: \"connected\" };\n}\nif (SKstate == 2) {\n    statusmsg = { fill: \"green\", shape: \"ring\", text: \"subscribing\" };\n}\n\nreturn ([msg,{payload:statusmsg}]);",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2370,
+        "y": 40,
+        "wires": [
+            [
+                "63c82b53d59c54eb"
+            ],
+            [
+                "4138c2c99bcf9b47"
+            ]
+        ],
+        "outputLabels": [
+            "Debug",
+            "Status"
+        ]
+    },
+    {
+        "id": "a75b33555d8ead73",
+        "type": "websocket-client",
+        "z": "1a7ae86d5b9d3efd",
+        "path": "${sk_host_stream}",
+        "tls": "",
+        "wholemsg": "false",
+        "hb": "0",
+        "subprotocol": ""
+    },
+    {
+        "id": "4148cd6724ec5746",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2000,
+        "y": 140,
+        "wires": [
+            [
+                "488d539adb5b12f5",
+                "2c74a33bf3476bfb"
+            ]
+        ]
+    },
+    {
+        "id": "dc39bf3a1d3f286f",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 1220,
+        "y": 360,
+        "wires": [
+            [
+                "c59404a38e34eb0a"
+            ]
+        ]
+    },
+    {
+        "id": "c59404a38e34eb0a",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2700,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "857ecbba2f499461",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 1380,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e414ec81c8407664",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 980,
+        "y": 460,
+        "wires": [
+            [
+                "e7e76d36374356a7"
+            ]
+        ]
+    },
+    {
+        "id": "ecc88d0ba4909d2a",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2560,
+        "y": 220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2c74a33bf3476bfb",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2440,
+        "y": 140,
+        "wires": [
+            [
+                "ecc88d0ba4909d2a"
+            ]
+        ]
+    },
+    {
+        "id": "536e6ac9f200a9ad",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2500,
+        "y": 280,
+        "wires": [
+            [
+                "ecc88d0ba4909d2a"
+            ]
+        ]
+    },
+    {
+        "id": "d8dcb1a55dfd3739",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2360,
+        "y": 320,
+        "wires": [
+            [
+                "2087b9e3d1081577",
+                "536e6ac9f200a9ad"
+            ]
+        ]
+    },
+    {
+        "id": "4138c2c99bcf9b47",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2700,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "63c82b53d59c54eb",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2700,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2de8ab076d6fec29",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 1840,
+        "y": 200,
+        "wires": [
+            [
+                "4148cd6724ec5746"
+            ]
+        ]
+    }
+    ]
+}
