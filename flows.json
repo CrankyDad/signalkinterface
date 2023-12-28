@@ -26,8 +26,8 @@
         ],
         "out": [
             {
-                "x": 3170,
-                "y": 200,
+                "x": 2990,
+                "y": 220,
                 "wires": [
                     {
                         "id": "c59404a38e34eb0a",
@@ -390,7 +390,7 @@
         ],
         "status": {
             "x": 3140,
-            "y": 440,
+            "y": 500,
             "wires": [
                 {
                     "id": "e7e76d36374356a7",
@@ -501,7 +501,7 @@
         "type": "junction",
         "z": "1a7ae86d5b9d3efd",
         "x": 980,
-        "y": 520,
+        "y": 500,
         "wires": [
             [
                 "e7e76d36374356a7"
@@ -539,6 +539,19 @@
         "wires": [
             [
                 "ecc88d0ba4909d2a"
+            ]
+        ]
+    },
+    {
+        "id": "d8dcb1a55dfd3739",
+        "type": "junction",
+        "z": "1a7ae86d5b9d3efd",
+        "x": 2360,
+        "y": 320,
+        "wires": [
+            [
+                "2087b9e3d1081577",
+                "536e6ac9f200a9ad"
             ]
         ]
     },
@@ -732,7 +745,7 @@
         "finalize": "// Code added here will be run when the\n// node is being stopped or re-deployed.\n\nvar status = { fill: \"red\", shape: \"ring\", text: \"disconnected\" };\nflow.set(\"SKstate\", 0);\nflow.set(\"SKAutenticated\", false)\n//node.status({ fill: \"red\", shape: \"ring\", text: \"disconnected\" });\n\nreturn (null, null, { payload: status });",
         "libs": [],
         "x": 2700,
-        "y": 520,
+        "y": 500,
         "wires": [
             []
         ],
@@ -798,8 +811,8 @@
         "scope": [
             "fa15c4cf373001e2"
         ],
-        "x": 2410,
-        "y": 480,
+        "x": 2370,
+        "y": 540,
         "wires": [
             [
                 "e7e76d36374356a7"
@@ -830,7 +843,7 @@
         "id": "de5195269abbc993",
         "type": "change",
         "z": "1a7ae86d5b9d3efd",
-        "name": "Add topic websocke in",
+        "name": "Add topic websocket in",
         "rules": [
             {
                 "t": "set",
@@ -996,8 +1009,7 @@
         "y": 320,
         "wires": [
             [
-                "2087b9e3d1081577",
-                "536e6ac9f200a9ad"
+                "d8dcb1a55dfd3739"
             ]
         ],
         "info": "{{{baseURL}}}/signalk/v1/access/requests"
@@ -1071,8 +1083,8 @@
         "name": "Error catcher",
         "scope": null,
         "uncaught": true,
-        "x": 2250,
-        "y": 20,
+        "x": 2750,
+        "y": 80,
         "wires": [
             []
         ]
@@ -1149,7 +1161,7 @@
                 "t": "nnull"
             }
         ],
-        "checkall": "true",
+        "checkall": "false",
         "repair": false,
         "outputs": 2,
         "x": 1950,
@@ -1644,7 +1656,7 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 130,
+        "x": 170,
         "y": 520,
         "wires": [
             [
@@ -1763,8 +1775,8 @@
         "topic": "design.airFreight",
         "payload": "1",
         "payloadType": "num",
-        "x": 160,
-        "y": 140,
+        "x": 140,
+        "y": 160,
         "wires": [
             [
                 "a38fa2e2250e1dcc"
