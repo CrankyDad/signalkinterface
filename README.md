@@ -89,14 +89,6 @@ The modules also provides a "flattening" node which takes SignalK JSON data and 
 Flattened messages will have the SignalK path as <code>msg.topic</code> and the SignalK value as <code>msg.payload</code>. Other SignalK data will also be present in the message like timestamp.
 
 ## Installation/Use
-1. Add a websocket in to your flow
-    - For properties use
-      - URL ws://[hostname]:[port]/signalk/v1/stream?subscribe=none  (ws://localhost:3000/signalk/v1/stream?subscribe=none)
-      - Subprotocol:
-      - Send/Receive: payload
-2. Add a websocket out using the same configuration as above
-3. Create a signalkhelper and connect the websocket in to the in-port and the 'control'-out port to the websocket out node. This will pass controll messages back to the web-socket.
-4. Create a signalkflattener and connect it after the signalkhelper on the delta port
+Edit the configuration of the node to your liking.
 
-If you want to <code>PUT</code> values to Signal K, use the signalkputhelper and connect the output to the websocket out node.<br>
 [Picture of example - TBD]
