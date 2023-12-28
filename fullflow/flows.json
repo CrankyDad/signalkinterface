@@ -11,7 +11,7 @@
         "id": "1a7ae86d5b9d3efd",
         "type": "subflow",
         "name": "SignalK helper",
-        "info": "\nAbstracts [SignalK](https://signalk.org/) connection and server interaction\nto simplify connecting and using a SignalK server. It acts as a\nSignalK client.\nIt supports subscribing and unsubscribing by using messages on the fly or by the\nconfiguration.\nIt can also `GET` values if there only is a sporadic need of certain data\n(no need for subscribing) to paths.\n\nThe SignalK helper can authenticate to the SignalK server, either by\nusername/password or by device authentication where the request needs to\nbe accepted/approved by an admin on the server.\n\nThe SignalK helper also supports `PUT` messages which is used to change a value\non the server. This is typically used for changing the status of electical switches.\nDo note that the path containing the value to be changed need to have a PUT handler\nregistered with it. The node needs to be authenticated with the right to write data.\nThe SignalK helper can't maipulate paths not having PUT handlers.\n\nThe SignalK helper indicates its status by showing:\n - Red - There is no websocket connection to the server\n - Yellow - There is a websocket connecton to the server, but no subscription of data\n - Green - There is a subscription and there are updates sent on the websocket\n\n The status shows:\n - a ring if the node is not authenticated\n - a dot if the node is authenticated\n\n---\n\n\n# Configuration\nThe node provides the following coniguration options:\n - **Device login** - Check if the node shall authenticate as a device (not username/passowrd)\n - **Client Id** - Identifier the identifes the client (node) to the server when device authentication is used\n - **Username/Password** - For a user in SignalK. The user needs write access if changes to data are to be made\n - **minPeriod** - Messages from a path will be sent with at least this internvall (not to flood the node/sever).\n \nThere are tree available subscription blocks with their own policy, paths and period.\nIf paths are left blank, the block will not be used.\n\nIf a value is left blank, the node will set a sensible default value.\n\n\n - **SK Host stream** - URL to the stream endpoint. Example ws://localhost:3000/signalk/v1/stream?subscribe=none\n - **SK Host** Base URL to the server. Example http://localhost:3000 \n\n\n#  Inputs\n`skaction`\n    The command sent to the node. The commands are:\n -  `get`             One-time fetch of data from the server. Can be a single or multiple paths. Paths are sent in the topic\n -  `add-subscribe`   subscribe to the path/paths sent in topic\n -  `unsubscribe`     unsubscribe for all paths. topic is ignored\n -  `update`          update the value of path with the value in payload\n -  `authenticate`   trigger a reauthentication to the server if the authentication has expired\n\n`topic`\n    Which path or paths the command relates to. It can either be a string with a SignalK path\n    or a JSON object with the following format {\"paths\":[path1,path2,path3]}. Pathx are all strings\n\n`payload`\n    The value that the path is to be set to. This is only used for updates\n\n## add-subscribe adds the following inputs \n`policy`, `period` and `minPeriod`\n[SignalK documentation provides information](https://signalk.org/specification/1.7.0/doc/subscription_protocol.html) about these settings.\n\n---\n\n# Outputs\nThe node has two outputs.\n## Debug\nGeneral output for error messages and internal messages sent to the websocket or HTTP request.\nUseble for debugging.\nRaw data from the websocket-in has the topic set to _websocket-in_ (useful for filering).\nThe skaction is set as `topic` (for filtering). The original topic is moved to `payload.topic`\n\n## Updates\nSends recieved data from SignalK. Messages are flattened, meaning that they only contain one path and its value per message.\nThe message are the same as messages sent by the embdded Node Red.\n -  `topic` the path the value relates to\n -  `payload` the value the path contains. This can be a number, string or an object\n -  `$source` the source as recorded by SignalK\n -  `timestamp` the date/time when the value was updated (\"2023-12-21T22:38:11.459Z\")",
+        "info": "\nAbstracts [SignalK](https://signalk.org/) connection and server interaction\nto simplify connecting and using a SignalK server. It acts as a\nSignalK client.\nIt supports subscribing and unsubscribing by using messages on the fly or by the\nconfiguration.\nIt can also `GET` values if there only is a sporadic need of certain data\n(no need for subscribing to paths).\n\nThe SignalK helper can authenticate to the SignalK server, either by\nusername/password or by device authentication where the request needs to\nbe accepted/approved by an admin on the server.\n\nThe SignalK helper also supports `PUT` messages which is used to change a value\non the server. This is typically used for changing the status of electical switches.\nDo note that the path containing the value to be changed need to have a PUT handler\nregistered with it. The node needs to be authenticated with the right to write data.\nThe SignalK helper can't maipulate paths not having PUT handlers.\n\nThe SignalK helper indicates its status by showing:\n - Red - There is no websocket connection to the server\n - Yellow - There is a websocket connecton to the server, but no subscription of data\n - Green - There is a subscription and there are updates sent on the websocket\n\n The status shows:\n - a ring if the node is not authenticated\n - a dot if the node is authenticated\n\n---\n\n\n# Configuration\nThe node provides the following coniguration options:\n - **Device login** - Check if the node shall authenticate as a device (not username/passowrd)\n - **Client Id** - Identifier the identifes the client (node) to the server when device authentication is used\n - **Username/Password** - For a user in SignalK. The user needs write access if changes to data are to be made\n - **minPeriod** - Messages from a path will be sent with at least this internvall (not to flood the node/sever).\n \nThere are tree available subscription blocks with their own policy, paths and period.\nIf paths are left blank, the block will not be used.\n\nIf a value is left blank, the node will set a sensible default value.\n\n\n - **SK Host stream** - URL to the stream endpoint. Example ws://localhost:3000/signalk/v1/stream?subscribe=none\n - **SK Host** Base URL to the server. Example http://localhost:3000 \n\n\n#  Inputs\n`skaction`\n    The command sent to the node. The commands are:\n -  `get`             One-time fetch of data from the server. Can be a single or multiple paths. Paths are sent in the topic\n -  `add-subscribe`   subscribe to the path/paths sent in topic\n -  `unsubscribe`     unsubscribe for all paths. topic is ignored\n -  `update`          update the value of path with the value in payload\n -  `authenticate`   trigger a reauthentication to the server if the authentication has expired\n\n`topic`\n    Which path or paths the command relates to. It can either be a string with a SignalK path\n    or a JSON object with the following format {\"paths\":[path1,path2,path3]}. Pathx are all strings\n\n`payload`\n    The value that the path is to be set to. This is only used for updates\n\n## add-subscribe adds the following inputs \n`policy`, `period` and `minPeriod`\n[SignalK documentation provides information](https://signalk.org/specification/1.7.0/doc/subscription_protocol.html) about these settings.\n\n---\n\n# Outputs\nThe node has two outputs.\n## Debug\nGeneral output for error messages and internal messages sent to the websocket or HTTP request.\nUseble for debugging.\nRaw data from the websocket-in has the topic set to _websocket-in_ (useful for filering).\nThe skaction is set as `topic` (for filtering). The original topic is moved to `payload.topic`\n\n## Updates\nSends recieved data from SignalK. Messages are flattened, meaning that they only contain one path and its value per message.\nThe message are the same as messages sent by the embdded Node Red.\n -  `topic` the path the value relates to\n -  `payload` the value the path contains. This can be a number, string or an object\n -  `$source` the source as recorded by SignalK\n -  `timestamp` the date/time when the value was updated (\"2023-12-21T22:38:11.459Z\")",
         "category": "",
         "in": [
             {
@@ -289,7 +289,7 @@
             {
                 "name": "sub3_policy",
                 "type": "str",
-                "value": "",
+                "value": "ideal",
                 "ui": {
                     "icon": "font-awesome/fa-file-powerpoint-o",
                     "label": {
@@ -373,14 +373,14 @@
             }
         ],
         "meta": {
-            "module": "SignalK helper",
+            "module": "@crankydad/node-red-signalkhelper",
             "version": "1.0.0",
-            "author": "Jan Wellergård <CrankyDad@wellergard.se>",
-            "desc": "Node that abstracts SignalK by supporting subscription, authenticationa",
-            "keywords": "signalk",
-            "license": "Apache-2.0"
+            "author": "Jan Wellergård <crankydad@wellergard.se>",
+            "desc": "Node that abstracts SignalK by supporting subscription, authentication",
+            "keywords": "signalK",
+            "license": "GPL-3.0"
         },
-        "color": "#DDAA99",
+        "color": "#FFCC66",
         "inputLabels": [
             "Input"
         ],
@@ -388,6 +388,7 @@
             "Debug",
             "Updates"
         ],
+        "icon": "node-red/leveldb.svg",
         "status": {
             "x": 3080,
             "y": 460,
@@ -579,8 +580,8 @@
         "id": "2de8ab076d6fec29",
         "type": "junction",
         "z": "1a7ae86d5b9d3efd",
-        "x": 1820,
-        "y": 220,
+        "x": 1840,
+        "y": 200,
         "wires": [
             [
                 "4148cd6724ec5746"
@@ -724,7 +725,7 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1670,
+        "x": 1610,
         "y": 220,
         "wires": [
             [
@@ -744,7 +745,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1710,
+        "x": 1650,
         "y": 280,
         "wires": [
             [
@@ -764,7 +765,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1720,
+        "x": 1660,
         "y": 180,
         "wires": [
             [
@@ -805,7 +806,7 @@
         "initialize": "// Code added here will be run once\n// whenever the node is started.\nvar deviceLogin = env.get(\"device_login\") || false;\nvar baseURL = env.get(\"sk_host\") || null;\n\nif (deviceLogin && baseURL==null) {\n    node.warn(\"Missing base URL for sending authentication requests. Review setting\");\n}\n\n// 0 - Node start, status unkown.\n// 0 - No request has been sent. Not authenticated\n// 1 - Request has been sent and awaiting approval\n// 2 - Request reply processed - Authenticted\n// 3 - Flow is authenticated an monitor the token\n// 4 - Turned off\nflow.set(\"deviceLoginStatus\", -1);",
         "finalize": "",
         "libs": [],
-        "x": 1670,
+        "x": 1610,
         "y": 100,
         "wires": [
             [
@@ -871,7 +872,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1670,
+        "x": 1610,
         "y": 140,
         "wires": [
             [
@@ -1070,7 +1071,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1700,
+        "x": 1640,
         "y": 320,
         "wires": [
             [
@@ -1194,7 +1195,7 @@
         "id": "f6b7428f9be2864e",
         "type": "switch",
         "z": "1a7ae86d5b9d3efd",
-        "name": "",
+        "name": "Switch for ws-REST",
         "property": "method",
         "propertyType": "msg",
         "rules": [
@@ -1208,8 +1209,8 @@
         "checkall": "false",
         "repair": false,
         "outputs": 2,
-        "x": 1950,
-        "y": 220,
+        "x": 1900,
+        "y": 240,
         "wires": [
             [
                 "488d539adb5b12f5",
@@ -1285,8 +1286,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1650,
-        "y": 40,
+        "x": 1590,
+        "y": 60,
         "wires": [
             [
                 "a29091f08f9d60a0"
