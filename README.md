@@ -54,7 +54,7 @@ If a value is left blank, the node will set a sensible default value.
 
 `topic`
     Which path or paths the command relates to. It can either be a string with a SignalK path
-    or a JSON object with the following format {"paths":[path1,path2,path3]}. Pathx are all strings
+    or a JSON object with the following format {"paths":[path1,path2,path3]}. Path[x] are all strings
 
 `payload`
     The value that the path is to be set to. This is only used for updates
